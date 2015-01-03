@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>snippets--gmaps-demo.md</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://maps.google.com/maps/api/js"></script>
+<script type="text/javascript" src="http://hpneo.github.io/gmaps/gmaps.js"></script>
+<script type="text/javascript" src="http://code.angularjs.org/1.2.5/angular.js"></script>
+    <style type="text/css">
+    #map, #panorama {
+  height: 600px;
+  background: #6699cc; }
+
+  .pick-up-item {
+    display: inline-block;
+    width: 33%;
+  }
+
+    </style>
+</head>
+<body ng-controller="idxCtrl">
+    <h1>Google Maps API with less pain and more fun</h1>
+<div class="popin">
+  <div id="map"></div>
+
+  <div class="pickups" ng-show="rawInfo.count">
+    <p>一共有：{{rawInfo.count}}</p>
+    <div ng-repeat="i in pickups" class="pick-up-item">
+      <img ng-src="{{i.photo_file_url}}" alt="{{i.upload_date}}">
+      <p>{{i.upload_date}} - {{i.photo_title}}</p>
+      <p>{{i.latitude}} - {{i.longitude}}</p>
+    </div>
+  </div>
+</div>
+
+    <script type="text/javascript">
+    // https://code.google.com/p/gmaps-api-issues/issues/attachmentText?id=1502&aid=6766611383903949485&name=my-panoramio.js&token=7c973dae108791dadd901b8e8db3f4bc
+    var map;
+$(document).ready(function(){
+  map = new GMaps({
+    div: '#map',
+    lat: 37.042,
+    lng: 89.028333,
+    zoom: 3 // demo world wide view
+  });
+  var app = angular.module('myApp', []);
+  app.controller('idxCtrl', function($scope, $http) {
+
+    function buildMarks(picks) {
+      $.each(picks, function(idx, i) {
+        map.addMarker({
+          lat: i.latitude,
+          lng: i.longitude,
+          title: i.photo_title,
+          icon: new google.maps.MarkerImage(i.photo_file_url, new google.maps.Size(32,32))
+        });
+      });
+    }
+
+    GMaps.on('click', map.map, function(e) {
+      var lat = e.latLng.lat();
+      var lng = e.latLng.lng();
+      console.log({lat: lat, lng: lng});
+
+      // remove before marks
+      $http.get('/api/panoramas', {
+        params: {
+          lat: lat,
+          lng: lng
+        }
+      }).then(function(r) {
+        r = r.data;
+        $scope.rawInfo = r;
+        $scope.pickups = r.photos;
+        buildMarks(r.photos); // build Marks
+      });
+    });
+  });
+  angular.element(document).ready(function() {
+        angular.bootstrap(document, ['myApp']);
+  });
+});
+    </script>
+</body>
+</html>
